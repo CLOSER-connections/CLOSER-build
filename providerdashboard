@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLOSER | Provider Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --brand-pink: #F43F5E;
+            --brand-dark: #0F172A;
+            --brand-slate: #1E293B;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-surface: rgba(30, 41, 59, 0.6);
+            --glass-highlight: rgba(30, 41, 59, 0.9);
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #020617;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-frame {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100%;
+            background-color: var(--brand-dark);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            overflow: hidden;
+            background-image: radial-gradient(circle at 90% 10%, rgba(244, 63, 94, 0.05) 0%, transparent 40%);
+        }
+
+        @media (min-width: 480px) {
+            .app-frame {
+                height: 90vh;
+                margin-top: 5vh;
+                border-radius: 24px;
+                border: 1px solid var(--glass-border);
+            }
+        }
+
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            padding-bottom: 100px;
+        }
+        .scroll-content::-webkit-scrollbar { display: none; }
+
+        .glass-panel {
+            background: var(--glass-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .glass-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            border-radius: 16px;
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .request-header {
+            background: rgba(244, 63, 94, 0.05);
+            border-bottom: 1px solid rgba(244, 63, 94, 0.1);
+            padding: 16px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .request-body {
+            padding: 16px;
+        }
+
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active { background: var(--brand-pink); }
+        .toggle-knob {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch.active .toggle-knob { transform: translateX(20px); }
+
+        .nav-item {
+            position: relative;
+            color: #64748B;
+            transition: color 0.3s ease;
+        }
+        .nav-item.active { color: white; }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: var(--brand-pink);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--brand-pink);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-frame">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center p-6 pb-2 z-20">
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">Dashboard</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Welcome back, Sarah</p>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                <i class="ph-fill ph-shield-check text-emerald-400"></i>
+                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">Vetted</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="scroll-content">
+
+            <!-- Toggle -->
+            <div class="glass-card p-4 mb-6 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-rose-500">
+                        <i class="ph-fill ph-broadcast text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold">Accepting Bookings</h2>
+                        <p class="text-[10px] text-slate-400">Visible in search results</p>
+                    </div>
+                </div>
+                <div class="toggle-switch active" onclick="this.classList.toggle('active')">
+                    <div class="toggle-knob"></div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-3 mb-8">
+                <div class="stat-card">
+                    <span class="text-lg font-bold text-white">4</span>
+                    <span class="text-[9px] text-slate-400 uppercase tracking-wide mt-1">Pending</span>
+                </div>
+                <div class="stat-card">
+                    <span class="text-lg font-bold text-white">12</span>
+                    <span class="text-[9px] text-slate-400 uppercase tracking-wide mt-1">Clients</span>
+                </div>
+                <div class="stat-card border-rose-500/20 bg-rose-500/5">
+                    <span class="text-lg font-bold text-rose-400">$1.2k</span>
+                    <span class="text-[9px] text-rose-300/70 uppercase tracking-wide mt-1">This Week</span>
+                </div>
+            </div>
+
+            <!-- Request Card -->
+            <div class="glass-card overflow-hidden mb-6 relative">
+                <div class="absolute top-4 right-4 flex gap-1">
+                     <span class="px-2 py-1 rounded bg-rose-500 text-white text-[10px] font-bold">NEW</span>
+                </div>
+
+                <div class="request-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
+                             <i class="ph ph-user text-2xl text-slate-500 translate-y-2 translate-x-2"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold">Alex Chen</h3>
+                            <div class="flex items-center gap-1 text-[10px] text-slate-300">
+                                <i class="ph-fill ph-star text-yellow-500"></i>
+                                <span>New Client</span>
+                                <span class="text-slate-600">•</span>
+                                <span>ID Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="request-body">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase">When</p>
+                            <p class="text-sm font-medium">Fri, Oct 24</p>
+                            <p class="text-xs text-slate-400">7:00 PM (2h)</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase">Location</p>
+                            <p class="text-sm font-medium">Out-Call</p>
+                            <p class="text-xs text-slate-400">Sofitel Darling Harbour</p>
+                        </div>
+                    </div>
+                    
+                    <!-- NEW: Location Preview Thumbnails -->
+                    <div class="mb-4">
+                        <p class="text-[10px] text-slate-400 uppercase mb-2">Location Preview</p>
+                        <div class="flex gap-2">
+                            <div class="w-12 h-12 rounded bg-slate-700 bg-gradient-to-br from-slate-600 to-slate-800"></div>
+                            <div class="w-12 h-12 rounded bg-slate-700 bg-gradient-to-bl from-slate-600 to-slate-700"></div>
+                            <div class="w-12 h-12 rounded bg-slate-800 border border-white/5 flex items-center justify-center text-xs text-slate-500">+2</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-800/50 rounded-lg border border-white/5 mb-4">
+                        <div class="flex items-start gap-2 mb-2">
+                             <i class="ph-fill ph-users-three text-emerald-400 text-sm mt-0.5"></i>
+                             <div>
+                                 <p class="text-xs font-bold text-emerald-400">Support Worker Present</p>
+                                 <p class="text-[10px] text-slate-400">Independent support will attend.</p>
+                             </div>
+                        </div>
+                        <div class="flex items-start gap-2">
+                             <i class="ph-fill ph-lightbulb text-amber-400 text-sm mt-0.5"></i>
+                             <div>
+                                 <p class="text-xs font-bold text-amber-400">Sensory Preference</p>
+                                 <p class="text-[10px] text-slate-400">Low lighting requested.</p>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button class="flex-1 py-3 rounded-xl border border-rose-500/30 text-rose-500 text-xs font-bold hover:bg-rose-500/10 transition">
+                            Decline
+                        </button>
+                        <button class="flex-1 py-3 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-[0_4px_15px_rgba(244,63,94,0.3)] hover:bg-rose-500 transition">
+                            Accept Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="w-full py-3 rounded-xl border border-dashed border-slate-600 text-slate-400 text-xs font-medium hover:border-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+                <i class="ph ph-plus"></i>
+                Log External Cash Payment
+            </button>
+
+        </main>
+
+        <nav class="absolute bottom-0 w-full glass-panel border-t border-t-white/10 z-30 pb-safe">
+            <div class="flex justify-around items-center h-16 pb-2">
+                <button class="nav-item active flex flex-col items-center justify-center w-16 h-full">
+                    <i class="ph-fill ph-squares-four text-2xl mb-1"></i>
+                    <span class="text-[10px] font-medium tracking-wide">Dash</span>
+                </button>
+                <button class="nav-item flex flex-col items-center justify-center w-16 h-full">
+                    <i class="ph ph-calendar text-2xl mb-1"></i>
+                    <span class="text-[10px] font-medium tracking-wide">Schedule</span>
+                </button>
+                <button class="nav-item flex flex-col items-center justify-center w-16 h-full">
+                    <div class="relative">
+                        <i class="ph ph-chat-teardrop-text text-2xl mb-1"></i>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></div>
+                    </div>
+                    <span class="text-[10px] font-medium tracking-wide">Chats</span>
+                </button>
+                <button class="nav-item flex flex-col items-center justify-center w-16 h-full">
+                    <i class="ph ph-user text-2xl mb-1"></i>
+                    <span class="text-[10px] font-medium tracking-wide">Profile</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="h-6 bg-transparent"></div>
+
+    </div>
+</body>
+</html>
