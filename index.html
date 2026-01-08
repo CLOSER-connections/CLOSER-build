@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CLOSER | Final Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --brand-pink: #F43F5E;
+            --brand-dark: #0F172A;
+            --brand-slate: #1E293B;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-surface: rgba(30, 41, 59, 0.6);
+            --danger-red: #DC2626;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #000;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Device Frame --- */
+        .device-frame {
+            width: 100%;
+            height: 100%;
+            background-color: var(--brand-dark);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 480px) {
+            .device-frame {
+                max-width: 400px;
+                height: 85vh;
+                border-radius: 40px;
+                border: 8px solid #334155;
+                box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            }
+        }
+
+        /* --- Views Management --- */
+        .view {
+            position: absolute;
+            inset: 0;
+            background: var(--brand-dark);
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 0;
+            padding-bottom: 80px; /* Space for nav */
+            overflow: hidden;
+        }
+
+        .view.active {
+            opacity: 1;
+            pointer-events: all;
+            z-index: 10;
+        }
+
+        .view.overlay {
+            z-index: 100;
+            background: rgba(2, 6, 23, 0.98);
+            backdrop-filter: blur(10px);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            pointer-events: all;
+            padding-bottom: 0;
+        }
+
+        .view.overlay.open {
+            transform: translateY(0);
+        }
+
+        /* --- Components --- */
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            padding-bottom: 120px;
+        }
+        .scroll-content::-webkit-scrollbar { display: none; }
+
+        .glass-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            border-radius: 16px;
+        }
+
+        .glass-panel {
+            background: var(--glass-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Nav Bar */
+        .nav-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 10px;
+            z-index: 50;
+        }
+
+        .nav-item {
+            color: #64748B;
+            transition: color 0.3s;
+            display: flex;
+            flex-col: column;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+        }
+        .nav-item.active { color: white; }
+        .nav-indicator {
+            width: 4px; height: 4px; background: var(--brand-pink);
+            border-radius: 50%; margin-top: 4px; opacity: 0;
+            box-shadow: 0 0 8px var(--brand-pink);
+        }
+        .nav-item.active .nav-indicator { opacity: 1; }
+
+        /* Slider */
+        .slider-container {
+            width: 100%; height: 56px; background: rgba(15, 23, 42, 0.8);
+            border-radius: 28px; border: 1px solid var(--glass-border);
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .slider-track {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+            background: var(--brand-pink); opacity: 0.2; transition: width 0.1s linear;
+        }
+        .slider-text {
+            font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #94a3b8; pointer-events: none; z-index: 1;
+        }
+        .slider-knob {
+            width: 48px; height: 48px; background: white; border-radius: 50%;
+            position: absolute; left: 4px; top: 4px; display: flex; align-items: center; justify-content: center;
+            color: var(--brand-pink); font-size: 20px; box-shadow: 0 0 15px rgba(255,255,255,0.2);
+            cursor: pointer; z-index: 10;
+        }
+        .slider-container.red .slider-track { background: var(--danger-red); }
+        .slider-container.red .slider-knob { color: var(--danger-red); box-shadow: 0 0 15px rgba(220, 38, 38, 0.4); }
+        .slider-container.red { border-color: rgba(220, 38, 38, 0.3); background: rgba(220, 38, 38, 0.1); }
+
+        /* Swipe UI */
+        .swipe-deck {
+            position: relative; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .swipe-card {
+            position: absolute;
+            top: 90px; left: 16px; right: 16px; bottom: 180px; 
+            background: var(--brand-slate); border-radius: 24px; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid var(--glass-border);
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        .swipe-card.swiped-left { transform: translateX(-150%) rotate(-20deg); opacity: 0; }
+        .swipe-card.swiped-right { transform: translateX(150%) rotate(20deg); opacity: 0; }
+
+        .swipe-actions {
+            position: absolute; bottom: 110px; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 24px; z-index: 20; pointer-events: none;
+        }
+        .action-btn {
+            pointer-events: auto; width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center;
+            font-size: 28px; transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .action-btn:active { transform: scale(0.9); }
+        .action-btn.pass { color: #F43F5E; }
+        .action-btn.like { color: #10B981; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+
+        .match-overlay {
+            position: absolute; inset: 0; background: rgba(2, 6, 23, 0.95);
+            z-index: 100; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; opacity: 0;
+            pointer-events: none; transition: opacity 0.5s;
+        }
+        .match-overlay.active { opacity: 1; pointer-events: all; }
+
+        /* Microphone Animation */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+        }
+        .mic-active {
+            color: #F43F5E !important;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        /* Form Styles */
+        .tag-select { border: 1px solid rgba(255,255,255,0.1); color: #94A3B8; transition: all 0.2s; margin-bottom: 0.5rem; }
+        .tag-select.selected { border-color: var(--brand-pink); background: rgba(244, 63, 94, 0.1); color: white; }
+        .form-input { width: 100%; padding: 16px; border-radius: 12px; background: #1E293B; border: 1px solid rgba(255,255,255,0.1); color: white; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--brand-pink); }
+        .form-label { display: block; text-transform: uppercase; font-size: 10px; font-weight: 700; color: #94A3B8; margin-bottom: 6px; margin-left: 4px; }
+
+    </style>
+</head>
+<body>
+
+<div class="device-frame">
+
+    <!-- VIEW: LOGIN / START (Landing) -->
+    <section id="view-start" class="view active" style="padding: 40px; justify-content: center; align-items: center; text-align: center; z-index: 60;">
+        <h1 class="text-4xl font-bold tracking-widest text-white mb-2">CLOSER</h1>
+        <p class="text-sm text-slate-400 mb-12 uppercase tracking-wide">Tactile Connections</p>
+        <div class="w-full space-y-4">
+            <button onclick="navigate('view-signup-role', '')" class="w-full py-4 rounded-xl bg-rose-600 text-white font-bold shadow-lg hover:bg-rose-500 transition">
+                Create Account
+            </button>
+            <button onclick="setRole('client'); navigate('view-discovery', 'nav-client')" class="w-full py-4 rounded-xl border border-slate-600 text-slate-300 font-bold hover:bg-slate-800 transition">
+                Log In (Client)
+            </button>
+            <button onclick="setRole('provider'); navigate('view-dashboard', 'nav-dashboard')" class="text-xs text-slate-500 hover:text-white block mx-auto pt-2">
+                Provider Login
+            </button>
+        </div>
+    </section>
+
+    <!-- VIEW: SIGNUP ROLE -->
+    <section id="view-signup-role" class="view">
+        <header class="flex items-center gap-4 p-6"><button onclick="navigate('view-start', '')"><i class="ph-bold ph-arrow-left text-xl"></i></button><h1 class="text-lg font-bold">Join Closer</h1></header>
+        <main class="scroll-content p-6">
+            <button onclick="setRole('client'); navigate('view-signup-form', '')" class="w-full p-6 bg-slate-800 border border-white/5 rounded-2xl mb-4 text-left hover:border-rose-500 transition"><h3 class="text-lg font-bold text-white">Client</h3><p class="text-sm text-slate-400">Find connections</p></button>
+            <button onclick="setRole('provider'); navigate('view-signup-form', '')" class="w-full p-6 bg-slate-800 border border-white/5 rounded-2xl text-left hover:border-rose-500 transition"><h3 class="text-lg font-bold text-white">Provider</h3><p class="text-sm text-slate-400">Offer services</p></button>
+        </main>
+    </section>
+
+    <!-- VIEW: SIGNUP FORM -->
+    <section id="view-signup-form" class="view">
+        <header class="flex items-center gap-4 p-6"><button onclick="navigate('view-signup-role', '')"><i class="ph-bold ph-arrow-left text-xl"></i></button><h1 class="text-lg font-bold">Create Account</h1></header>
+        <main class="scroll-content p-6">
+            <div class="space-y-4 mb-8">
+                <div><label class="form-label">Email</label><input type="email" placeholder="name@example.com" class="form-input"></div>
+                <div><label class="form-label">Password</label><input type="password" placeholder="••••••••" class="form-input"></div>
+            </div>
+            <button onclick="navigate('view-signup-onboarding', '')" class="w-full py-4 rounded-xl bg-rose-600 text-white font-bold shadow-lg">Continue</button>
+        </main>
+    </section>
+
+    <!-- VIEW: ONBOARDING -->
+    <section id="view-signup-onboarding" class="view">
+        <header class="flex items-center gap-4 p-6"><button onclick="navigate('view-signup-form', '')"><i class="ph-bold ph-arrow-left text-xl"></i></button><h1 class="text-lg font-bold">Profile</h1></header>
+        <main class="scroll-content p-6 pt-0" id="onboarding-content"></main>
+    </section>
+
+    <!-- VIEW: DISCOVERY -->
+    <section id="view-discovery" class="view">
+        <header class="flex justify-between items-center p-6 bg-[#0F172A]/90 backdrop-blur z-20 absolute top-0 left-0 right-0">
+            <button onclick="toggleFilters()" class="w-9 h-9 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-slate-400"><i class="ph-bold ph-sliders-horizontal"></i></button>
+            <h1 class="text-xl font-bold">Discover</h1>
+            <button onclick="toggleSafety()" class="w-9 h-9 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-rose-500"><i class="ph-fill ph-shield-check text-lg"></i></button>
+        </header>
+        <div class="swipe-deck" id="swipeDeck"></div>
+        <div class="swipe-actions">
+            <button class="action-btn pass" onclick="triggerSwipe('left')"><i class="ph-bold ph-x"></i></button>
+            <button class="action-btn like" onclick="triggerSwipe('right')"><i class="ph-fill ph-heart"></i></button>
+        </div>
+    </section>
+
+    <!-- VIEW: FILTERS -->
+    <section id="view-filters" class="view overlay">
+        <header class="flex justify-between items-center p-6 border-b border-white/5"><h1 class="text-lg font-bold">Filters</h1><button onclick="toggleFilters()"><i class="ph-bold ph-x text-slate-400"></i></button></header>
+        <main class="scroll-content p-6 space-y-6">
+            <div><label class="form-label">Distance</label><input type="range" class="w-full accent-rose-500"></div>
+            <div><label class="form-label">Max Rate</label><input type="range" class="w-full accent-rose-500"></div>
+            <div><label class="form-label">Experience</label><div class="space-y-2"><label class="flex items-center gap-2"><input type="checkbox" class="accent-rose-500"> Verified ID</label><label class="flex items-center gap-2"><input type="checkbox" class="accent-rose-500"> Disability Exp</label></div></div>
+            <button onclick="toggleFilters()" class="w-full py-4 rounded-xl bg-slate-700 text-white font-bold">Apply</button>
+        </main>
+    </section>
+
+    <!-- VIEW: SETTINGS -->
+    <section id="view-settings" class="view overlay">
+        <header class="flex justify-between items-center p-6 border-b border-white/5"><h1 class="text-lg font-bold">Settings</h1><button onclick="closeSettings()"><i class="ph-bold ph-x text-slate-400"></i></button></header>
+        <main class="scroll-content p-6 space-y-4">
+            <button class="w-full p-4 bg-slate-800 rounded-xl text-left font-bold text-white">Edit Profile</button>
+            <button onclick="location.reload()" class="w-full p-4 border border-rose-500/30 text-rose-500 rounded-xl font-bold mt-4">Log Out</button>
+        </main>
+    </section>
+
+    <!-- VIEW: PROFILE DETAILS (Expanded) -->
+    <section id="view-profile-details" class="view overlay">
+        <button onclick="closeProfileDetails()" class="absolute top-6 right-6 z-30 w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white border border-white/20"><i class="ph-bold ph-x"></i></button>
+        <main class="scroll-content p-0 pb-24" id="profileDetailsContent"></main>
+        <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#0F172A] to-transparent flex gap-4 justify-center z-40">
+            <button class="action-btn pass" onclick="closeProfileDetails(); triggerSwipe('left')"><i class="ph-bold ph-x"></i></button>
+            <button class="action-btn like" onclick="closeProfileDetails(); triggerSwipe('right')"><i class="ph-fill ph-heart"></i></button>
+        </div>
+    </section>
+
+    <!-- VIEW: MATCH OVERLAY -->
+    <div id="view-match" class="match-overlay">
+        <h2 class="text-3xl font-bold text-white mb-2">It's a Match!</h2>
+        <div class="w-full max-w-[280px] space-y-3">
+            <button onclick="closeMatch(); navigate('view-chat', 'nav-chat')" class="w-full py-4 rounded-xl bg-rose-600 text-white font-bold shadow-lg">Start Chat</button>
+            <button onclick="closeMatch()" class="w-full py-4 rounded-xl bg-slate-800 text-slate-400 font-bold">Keep Swiping</button>
+        </div>
+    </div>
+
+    <!-- VIEW: CHAT -->
+    <section id="view-chat" class="view">
+        <header class="flex items-center gap-3 p-4 bg-[#0F172A]/90 backdrop-blur z-20 border-b border-white/5">
+            <button onclick="navigate('view-discovery', 'nav-client')" class="text-slate-400"><i class="ph-bold ph-arrow-left text-xl"></i></button>
+            <div class="flex-1"><h1 class="text-sm font-bold">Sarah</h1></div>
+            <button onclick="toggleSafety()" class="text-rose-500"><i class="ph-fill ph-shield-check text-xl"></i></button>
+        </header>
+        <main id="chatContainer" class="scroll-content flex flex-col gap-4 p-4">
+            <div class="self-end w-64 p-4 rounded-xl bg-slate-800 border border-rose-500/50 mt-2">
+                <p class="text-xs font-bold text-white mb-2">Ready to book?</p>
+                <button onclick="navigate('view-booking', 'nav-client')" class="w-full py-2 rounded bg-slate-700 text-xs text-white font-bold">Create Booking</button>
+            </div>
+        </main>
+        <div class="absolute bottom-[80px] left-0 right-0 p-4 bg-[#0F172A] border-t border-white/10">
+            <div class="relative flex gap-2 items-center">
+                <button id="micBtn" onclick="toggleVoice()" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="ph-bold ph-microphone"></i></button>
+                <div class="relative flex-1">
+                    <input id="chatInput" type="text" placeholder="Type a message..." class="w-full bg-slate-800 border border-white/10 rounded-full py-3 px-4 text-sm text-white focus:outline-none focus:border-rose-500 pr-10">
+                    <button onclick="sendMessage()" class="absolute right-2 top-1.5 p-1.5 text-rose-500"><i class="ph-fill ph-paper-plane-right text-lg"></i></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW: BOOKING FLOW -->
+    <section id="view-booking" class="view">
+        <header class="flex items-center gap-3 p-4 z-20 border-b border-white/5"><button onclick="navigate('view-chat', 'nav-chat')" class="text-slate-400"><i class="ph-bold ph-arrow-left text-xl"></i></button><div class="flex-1"><h1 class="text-sm font-bold">New Booking</h1></div></header>
+        <main class="scroll-content p-6">
+            <div class="glass-card p-4 space-y-3 mb-6">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2"><div class="flex items-center gap-2 text-slate-400"><i class="ph ph-calendar-blank text-lg"></i><span class="text-xs font-bold uppercase">Date</span></div><input type="date" value="2024-10-24" class="bg-transparent text-right text-sm font-bold text-white focus:outline-none [color-scheme:dark]"></div>
+                <div class="flex items-center justify-between border-b border-white/10 pb-2"><div class="flex items-center gap-2 text-slate-400"><i class="ph ph-clock text-lg"></i><span class="text-xs font-bold uppercase">Time</span></div><input type="time" value="19:00" class="bg-transparent text-right text-sm font-bold text-white focus:outline-none [color-scheme:dark]"></div>
+                <div class="flex items-center justify-between"><div class="flex items-center gap-2 text-slate-400"><i class="ph ph-hourglass text-lg"></i><span class="text-xs font-bold uppercase">Duration</span></div><select id="bookingDuration" onchange="updateTotal()" class="bg-transparent text-right text-sm font-bold text-white focus:outline-none [color-scheme:dark]"><option value="1">1 Hour</option><option value="2" selected>2 Hours</option><option value="3">3 Hours</option></select></div>
+            </div>
+            <div class="glass-card p-4 mb-6">
+                <div class="flex p-1 bg-slate-800 rounded-lg mb-4"><button id="btn-incall" onclick="toggleBookingLocation('incall')" class="flex-1 py-2 text-[10px] font-bold bg-rose-600 text-white rounded shadow">In-Call</button><button id="btn-outcall" onclick="toggleBookingLocation('outcall')" class="flex-1 py-2 text-[10px] font-bold text-slate-400">Out-Call</button></div>
+                <div id="loc-incall"><p class="text-xs text-slate-400 font-bold">PROVIDER STUDIO</p><span class="text-sm font-bold">123 Pitt Street, Sydney</span></div>
+                <div id="loc-outcall" class="hidden space-y-2"><input type="text" placeholder="Address" class="form-input"><p class="text-[9px] text-slate-500">* Provide safe environment photos.</p></div>
+            </div>
+            <div class="glass-card p-4 flex items-start gap-3 mb-6"><div class="mt-1 w-5 h-5 rounded-full border border-rose-500 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div></div><div><p class="text-sm font-bold text-white">Support Worker</p><p class="text-xs text-slate-400">I will bring my own independent support person.</p></div></div>
+            <div class="mt-auto"><div class="flex justify-between items-end mb-4"><span class="text-xs text-slate-400 uppercase">Total Estimate</span><span class="text-2xl font-bold" id="bookingTotal">$300</span></div><div class="slider-container" id="bookSlider"><div class="slider-track" id="bookTrack"></div><div class="slider-text" id="bookText">SLIDE TO REQUEST</div><div class="slider-knob" id="bookKnob"><i class="ph-bold ph-arrow-right"></i></div></div></div>
+        </main>
+    </section>
+
+    <!-- DASHBOARD (Generic Container, Content via JS) -->
+    <section id="view-dashboard" class="view"><header class="flex justify-between items-center p-6 bg-[#0F172A]/90 backdrop-blur z-20"><h1 class="text-xl font-bold">Dashboard</h1><button onclick="openSettings()" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-white/10"><i class="ph-fill ph-gear text-slate-400"></i></button></header><main class="scroll-content" id="dashboard-content"></main></section>
+
+    <!-- VETTING -->
+    <section id="view-vetting" class="view"><header class="flex items-center gap-4 p-6 border-b border-white/5"><button onclick="navigate('view-start', '')" class="text-slate-400"><i class="ph-bold ph-arrow-left text-xl"></i></button><h1 class="text-lg font-bold">Verification</h1></header><main class="scroll-content p-6"><div class="relative pl-8 border-l border-slate-700 space-y-8"><div><div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] text-black font-bold"><i class="ph-bold ph-check"></i></div><h3 class="text-sm font-bold text-slate-400">ID Check</h3><p class="text-xs text-emerald-500">Complete</p></div><div><div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center text-[10px] text-white font-bold">2</div><h3 class="text-sm font-bold text-white">Clearance Document</h3><div id="vetting-upload-zone" onclick="triggerUpload()" class="h-32 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center text-slate-500 bg-white/5 hover:border-rose-500 transition cursor-pointer"><i class="ph-duotone ph-cloud-arrow-up text-2xl mb-1"></i><span class="text-[10px] font-bold uppercase">Tap to Upload</span></div></div></div></main></section>
+
+    <!-- SAFETY & VETTING OVERLAYS -->
+    <section id="view-safety" class="view overlay"><header class="flex justify-between items-center p-6 border-b border-white/5"><h1 class="text-xl font-bold text-rose-500">Safety Center</h1><button onclick="toggleSafety()"><i class="ph-bold ph-x text-slate-400"></i></button></header><main class="scroll-content p-6"><div class="slider-container red" id="sosSlider"><div class="slider-track" id="sosTrack"></div><div class="slider-text text-red-200" id="sosText">SLIDE TO CALL 000</div><div class="slider-knob" id="sosKnob"><i class="ph-fill ph-phone-outgoing"></i></div></div></main></section>
+    <section id="view-vetting-details" class="view overlay"><header class="flex justify-between items-center p-6 border-b border-white/5"><h1 class="text-lg font-bold text-emerald-400">Credentials</h1><button onclick="closeVettingDetails()"><i class="ph-bold ph-x text-slate-400"></i></button></header><main class="scroll-content p-6" id="vettingDetailsContent"></main></section>
+
+    <!-- NAV BAR -->
+    <nav class="nav-bar hidden" id="mainNav">
+        <button onclick="navigate('view-discovery', 'nav-client')" id="nav-client" class="nav-item"><i class="ph-fill ph-magnifying-glass text-2xl"></i><div class="nav-indicator"></div></button>
+        <button onclick="navigate('view-chat', 'nav-chat')" id="nav-chat" class="nav-item"><i class="ph-fill ph-chat-teardrop-text text-2xl"></i><div class="nav-indicator"></div></button>
+        <button onclick="goToDashboard()" id="nav-dashboard" class="nav-item"><i class="ph-fill ph-squares-four text-2xl"></i><div class="nav-indicator"></div></button>
+    </nav>
+
+</div>
+
+<script>
+    /* --- DATA --- */
+    const fullIntimacyTags = ['Cuddling & Touch', 'Skin-to-Skin', 'Massage', 'Affectionate Kissing', 'Girlfriend Experience', 'Boyfriend Experience', 'Mutual Oral', 'Full Service', 'Social Outings', 'Platonic Companion'];
+    const providerProfiles = [{ id: 1, name: "Sarah", age: 28, role: "Touch Therapy Specialist", verified: true, online: true, imgGradient: "from-slate-700 to-slate-900", rate: "$300/hr", flexible: true, experience: "5 Yrs", disabilityExp: "Professional", bio: "I specialize in creating safe, sensory-friendly spaces.", fullBio: "Fully accessible studio with hoyer lift. 5 years experience.", services: ["Massage", "Touch Therapy", "GFE", "Cuddling"], tags: ["Wheelchair Access", "PTSD Aware"], vetting: [{ type: "Police Check", date: "Feb 2024", status: "Clear" }, { type: "NDIS Screening", date: "Mar 2024", status: "Active" }] }];
+    const clientProfiles = [{ id: 101, name: "Alex Chen", age: 34, role: "Client", verified: true, online: true, imgGradient: "from-blue-900 to-slate-900", rate: "N/A", flexible: false, experience: "New", disabilityExp: "Self", bio: "Looking for a patient provider.", fullBio: "I have autism and prefer low lighting.", services: ["Cuddling", "Sensory Friendly"], tags: ["Sensory Friendly"], vetting: [{ type: "ID Check", date: "Jan 2024", status: "Verified" }] }];
+    let currentProfileIndex = 0;
+    let selectedRole = 'client';
+    let currentFeed = providerProfiles;
+
+    /* --- LOGIC --- */
+    function setRole(role) {
+        selectedRole = role;
+        currentFeed = role === 'client' ? providerProfiles : clientProfiles;
+        renderOnboarding(role);
+        renderDashboard(role);
+        // Reset Nav
+        const navDash = document.getElementById('nav-dashboard');
+        navDash.onclick = goToDashboard;
+    }
+
+    function renderOnboarding(role) {
+        const container = document.getElementById('onboarding-content');
+        const tagsHtml = `<div class="flex flex-wrap gap-2 mt-2">${fullIntimacyTags.map(t => `<button class="tag-select px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800" onclick="this.classList.toggle('selected')">${t}</button>`).join('')}</div>`;
+        if(role === 'client') {
+            container.innerHTML = `<div class="space-y-4"><h2 class="text-sm font-bold text-slate-500 uppercase">About You</h2><div class="grid grid-cols-2 gap-4"><div><label class="form-label">Gender</label><select class="form-input"><option>Male</option><option>Female</option></select></div><div><label class="form-label">Age</label><input type="number" class="form-input" placeholder="28"></div></div><div><label class="form-label">Desired Intimacy</label>${tagsHtml}</div><div><label class="form-label">Bio</label><textarea class="form-input h-24"></textarea></div></div><button onclick="finishOnboarding()" class="w-full mt-8 py-4 rounded-xl bg-rose-600 text-white font-bold shadow-lg">Finish</button>`;
+        } else {
+            container.innerHTML = `<div class="space-y-4"><h2 class="text-sm font-bold text-slate-500 uppercase">Professional Profile</h2><div class="grid grid-cols-2 gap-4"><div><label class="form-label">Rate ($/hr)</label><input class="form-input" placeholder="300"></div><div class="flex items-center pt-6"><label class="flex items-center gap-2"><input type="checkbox" class="accent-rose-500 w-4 h-4"> <span class="text-xs">Flexible?</span></label></div></div><div><label class="form-label">Services Offered</label>${tagsHtml}</div><div class="grid grid-cols-2 gap-4"><div><label class="form-label">Sex Work Exp</label><select class="form-input text-xs"><option>1-3 Yrs</option><option>5+ Yrs</option></select></div><div><label class="form-label">Disability Exp</label><select class="form-input text-xs"><option>None</option><option>Professional</option></select></div></div></div><button onclick="finishOnboarding()" class="w-full mt-8 py-4 rounded-xl bg-rose-600 text-white font-bold shadow-lg">Finish</button>`;
+        }
+    }
+
+    function renderDashboard(role) {
+        const container = document.getElementById('dashboard-content');
+        if(role === 'client') {
+            container.innerHTML = `<h2 class="text-xs font-bold text-slate-400 uppercase mb-3">Pending Requests</h2><div class="glass-card mb-6 overflow-hidden border-l-4 border-l-yellow-500 p-4"><div class="flex justify-between items-start mb-3"><h3 class="text-sm font-bold text-white">Sarah</h3><span class="px-2 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-[9px] font-bold rounded uppercase">Awaiting</span></div><div class="pt-3 border-t border-white/5 space-y-2"><div class="flex justify-between text-xs"><span class="text-slate-400">Date</span><span class="text-white">Fri, Oct 24</span></div></div></div>`;
+        } else {
+            container.innerHTML = `<h2 class="text-xs font-bold text-slate-400 uppercase mb-3">Incoming Request</h2><div class="glass-card overflow-hidden"><div class="p-4 space-y-3"><div class="flex justify-between text-xs"><span class="text-slate-400">Client</span><span class="font-bold">Alex Chen</span></div><button onclick="viewRequestProfile()" class="w-full py-2 mb-2 rounded bg-slate-800 border border-white/10 text-xs font-bold text-white hover:bg-slate-700">View Client Profile</button><div class="flex gap-2"><button class="flex-1 py-2 rounded-lg border border-white/10 text-xs font-bold text-slate-400">Decline</button><button class="flex-1 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold">Accept</button></div></div></div>`;
+        }
+    }
+
+    function finishOnboarding() {
+        if(selectedRole === 'client') navigate('view-discovery', 'nav-client');
+        else navigate('view-dashboard', 'nav-dashboard');
+    }
+
+    function navigate(viewId, navId) {
+        document.querySelectorAll('.view:not(.overlay)').forEach(el => { el.classList.remove('active'); el.style.opacity = '0'; el.style.pointerEvents = 'none'; });
+        const target = document.getElementById(viewId);
+        target.classList.add('active'); setTimeout(() => { target.style.opacity = '1'; target.style.pointerEvents = 'all'; }, 10);
+        const nav = document.getElementById('mainNav');
+        const hideNavViews = ['view-start', 'view-signup-role', 'view-signup-form', 'view-signup-onboarding', 'view-vetting'];
+        if(hideNavViews.includes(viewId)) nav.classList.add('hidden'); else nav.classList.remove('hidden');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if(navId) document.getElementById(navId).classList.add('active');
+        if(viewId === 'view-discovery') renderCard();
+    }
+
+    function goToDashboard() { navigate('view-dashboard', 'nav-dashboard'); }
+
+    function renderCard() {
+        const container = document.getElementById('swipeDeck');
+        container.innerHTML = '';
+        if(currentProfileIndex >= currentFeed.length) { container.innerHTML = `<div class="text-center text-slate-500"><p>No more profiles.</p></div>`; return; }
+        const p = currentFeed[currentProfileIndex];
+        container.innerHTML = `<div class="swipe-card" id="currentCard"><div class="h-[55%] bg-gradient-to-b ${p.imgGradient} relative" onclick="openProfileDetails()"><div class="absolute inset-0 flex items-center justify-center text-slate-500 opacity-20"><i class="ph-fill ph-user text-8xl"></i></div><div class="absolute bottom-4 left-4"><div class="px-3 py-1 bg-black/60 backdrop-blur rounded-lg border border-white/10 text-xs font-bold">${p.rate}</div></div></div><div class="h-[45%] bg-slate-900 p-6 flex flex-col relative overflow-y-auto cursor-pointer" onclick="openProfileDetails()"><div class="flex justify-between items-start mb-1"><div><h2 class="text-2xl font-bold text-white">${p.name}, ${p.age}</h2><p class="text-xs text-rose-400 font-bold uppercase tracking-wider">${p.role}</p></div>${p.verified ? `<div onclick="event.stopPropagation(); openVettingDetails()" class="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/30 hover:bg-rose-500/30 transition"><i class="ph-fill ph-shield-check text-rose-500 text-lg"></i></div>` : ''}</div><div class="flex gap-4 text-[10px] text-slate-400 mb-3 border-b border-white/5 pb-3"><div><span class="block font-bold text-white">${p.experience}</span><span>Exp</span></div><div><span class="block font-bold text-white">${p.disabilityExp}</span><span>Disability Exp</span></div></div><p class="text-sm text-slate-300 leading-relaxed mb-4 line-clamp-3">${p.bio}</p><div class="flex flex-wrap gap-2 pb-10">${p.services.map(s => `<span class="px-2 py-1 rounded bg-rose-500/10 text-[9px] font-bold text-rose-400 border border-rose-500/20">${s}</span>`).join('')}</div><div class="text-center text-[10px] text-slate-500 mt-4 pb-4">Tap for details</div></div></div>`;
+    }
+
+    function openProfileDetails() {
+        const p = currentFeed[currentProfileIndex];
+        document.getElementById('profileDetailsContent').innerHTML = `<div class="h-[40vh] bg-gradient-to-b ${p.imgGradient} relative"><div class="absolute inset-0 flex items-center justify-center text-slate-500 opacity-20"><i class="ph-fill ph-user text-8xl"></i></div></div><div class="p-6 bg-[#0F172A] min-h-[60vh] -mt-6 relative rounded-t-3xl"><h1 class="text-3xl font-bold text-white">${p.name}, ${p.age}</h1><p class="text-sm text-rose-400 font-bold uppercase tracking-wider mb-6">${p.role}</p><div class="flex gap-4 text-xs text-slate-400 mb-6 border-b border-white/5 pb-6"><div class="text-center bg-slate-800/50 p-2 rounded-lg flex-1"><span class="block font-bold text-white text-lg">${p.rate}</span><span>Hourly</span></div><div class="text-center bg-slate-800/50 p-2 rounded-lg flex-1"><span class="block font-bold text-white text-lg">${p.experience}</span><span>Exp</span></div></div><h3 class="text-sm font-bold text-white mb-2">About Me</h3><p class="text-sm text-slate-300 leading-relaxed mb-6">${p.fullBio || p.bio}</p><h3 class="text-sm font-bold text-white mb-3">Services</h3><div class="flex flex-wrap gap-2 mb-6">${p.services.map(s => `<span class="px-3 py-1.5 rounded-lg bg-rose-500/10 text-xs font-bold text-rose-400 border border-rose-500/20">${s}</span>`).join('')}</div></div>`;
+        document.getElementById('view-profile-details').classList.add('open');
+    }
+
+    function viewRequestProfile() {
+        const p = clientProfiles[0];
+        document.getElementById('profileDetailsContent').innerHTML = `<div class="h-[40vh] bg-gradient-to-b ${p.imgGradient} relative"><div class="absolute inset-0 flex items-center justify-center text-slate-500 opacity-20"><i class="ph-fill ph-user text-8xl"></i></div></div><div class="p-6 bg-[#0F172A] min-h-[60vh] -mt-6 relative rounded-t-3xl"><h1 class="text-3xl font-bold text-white">${p.name}, ${p.age}</h1><p class="text-sm text-slate-300 leading-relaxed mb-6">${p.fullBio || p.bio}</p><div class="flex flex-wrap gap-2 mb-6">${p.services.map(s => `<span class="px-3 py-1.5 rounded-lg bg-rose-500/10 text-xs font-bold text-rose-400 border border-rose-500/20">${s}</span>`).join('')}</div></div>`;
+        document.getElementById('view-profile-details').classList.add('open');
+    }
+
+    function updateTotal() { document.getElementById('bookingTotal').innerText = '$' + (document.getElementById('bookingDuration').value * 150); }
+    function closeProfileDetails() { document.getElementById('view-profile-details').classList.remove('open'); }
+    function closeVettingDetails() { document.getElementById('view-vetting-details').classList.remove('open'); }
+    function openVettingDetails() { const p = currentFeed[currentProfileIndex]; document.getElementById('vettingDetailsContent').innerHTML = p.vetting.map(i => `<div class="flex items-center gap-4 p-4 mb-3 bg-slate-800/50 rounded-xl border border-white/5"><i class="ph-fill ph-check-circle text-xl text-emerald-400"></i><div><h4 class="text-sm font-bold">${i.type}</h4><p class="text-[10px] text-slate-400">Verified ${i.date}</p></div></div>`).join(''); document.getElementById('view-vetting-details').classList.add('open'); }
+    function toggleSafety() { document.getElementById('view-safety').classList.toggle('open'); }
+    function toggleFilters() { document.getElementById('view-filters').classList.toggle('open'); }
+    function openSettings() { document.getElementById('view-settings').classList.add('open'); }
+    function closeSettings() { document.getElementById('view-settings').classList.remove('open'); }
+    function triggerSwipe(d) { setTimeout(() => { document.getElementById('view-match').classList.add('active'); }, 300); }
+    function closeMatch() { document.getElementById('view-match').classList.remove('active'); }
+    function toggleBookingLocation(t) { 
+        if(t==='incall'){document.getElementById('loc-incall').classList.remove('hidden');document.getElementById('loc-outcall').classList.add('hidden');document.getElementById('btn-incall').classList.add('bg-rose-600','text-white');document.getElementById('btn-outcall').classList.remove('bg-rose-600','text-white');}
+        else{document.getElementById('loc-outcall').classList.remove('hidden');document.getElementById('loc-incall').classList.add('hidden');document.getElementById('btn-outcall').classList.add('bg-rose-600','text-white');document.getElementById('btn-incall').classList.remove('bg-rose-600','text-white');}
+    }
+    function triggerUpload() { document.getElementById('vetting-upload-zone').innerHTML = `<div class="flex flex-col items-center"><i class="ph-fill ph-check-circle text-3xl mb-1 text-emerald-500"></i><span class="text-[10px] font-bold text-emerald-500 uppercase">Uploaded</span></div>`; }
+    function sendMessage() { const i = document.getElementById('chatInput'); if(i.value){ document.getElementById('chatContainer').innerHTML += `<div class="self-end max-w-[80%] p-3 rounded-tl-xl rounded-bl-xl rounded-br-xl bg-rose-500/20 border border-rose-500/20 text-sm text-white">${i.value}</div>`; i.value=''; } }
+
+    /* Slider Factory */
+    function initSlider(cId, tId, kId, txtId, endTxt) {
+        const c = document.getElementById(cId), t = document.getElementById(tId), k = document.getElementById(kId), txt = document.getElementById(txtId);
+        let dragging = false;
+        k.addEventListener('mousedown', () => dragging = true); k.addEventListener('touchstart', () => dragging = true);
+        const move = (cx) => { if(!dragging) return; let x = cx - c.getBoundingClientRect().left - 24; if(x<4)x=4; if(x>c.offsetWidth-52)x=c.offsetWidth-52; k.style.left=x+'px'; t.style.width=(x/c.offsetWidth*100)+'%'; };
+        const end = () => { dragging=false; if(parseInt(k.style.left)>c.offsetWidth*0.8) { k.style.left=c.offsetWidth-52+'px'; t.style.width='100%'; txt.textContent=endTxt; k.innerHTML='<i class="ph-bold ph-check"></i>'; if(cId==='bookSlider') setTimeout(()=>navigate('view-chat','nav-chat'),500); } else { k.style.left='4px'; t.style.width='0%'; } };
+        document.addEventListener('mousemove', e=>move(e.clientX)); document.addEventListener('touchmove', e=>move(e.touches[0].clientX)); document.addEventListener('mouseup', end); document.addEventListener('touchend', end);
+    }
+    initSlider('bookSlider', 'bookTrack', 'bookKnob', 'bookText', 'SENT');
+    initSlider('sosSlider', 'sosTrack', 'sosKnob', 'sosText', 'CALLING...');
+</script>
+</body>
+</html>
